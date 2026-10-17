@@ -300,6 +300,41 @@ function savePart() {
 // 占位动作：原型阶段按钮点击提示
 window.toast = (msg) => alert('[原型] ' + msg);
 
+/* ===== A3：导出 CSV 模板（直接下载，不跳转页面） ===== */
+function exportTemplate() {
+  window.location.href = '/api/parts/template';
+}
+
+/* ===== A2：CSV 批量导入（浏览器原生选文件，上传后报告成功/跳过/逐行错误） ===== */
+function importParts() {
+  const inp = document.getElementById('importFile');
+  if (!inp) { toast('未找到导入控件'); return; }
+  inp.value = '';
+  inp.click();
+}
+
+document.addEventListener('change', function (e) {
+  if (!e.target || e.target.id !== 'importFile') return;
+  const file = e.target.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  fetch('/api/parts/import', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) { alert('导入失败：' + d.error); return; }
+      let msg = '导入完成：共 ' + d.total + ' 条，成功 ' + d.inserted + ' 条，跳过 ' + d.skipped + ' 条。';
+      if (d.errors && d.errors.length) {
+        msg += '\n\n跳过明细：\n' +
+          d.errors.slice(0, 20).map(x => '第' + x.row + '行 ' + x.part + '：' + x.msg).join('\n');
+        if (d.errors.length > 20) msg += '\n…等共 ' + d.errors.length + ' 条';
+      }
+      alert(msg);
+      loadParts();
+    })
+    .catch(() => toast('导入失败（后端不可达）'));
+});
+
 /* ===== G4：库根目录配置 ===== */
 const DIR_LABEL = {
   database: 'CIS 数据库', schematic: '原理图符号', footprint: 'PCB 封装',

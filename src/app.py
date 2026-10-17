@@ -5,9 +5,11 @@
 """
 import os
 import sys
+import csv
+import io
 import time
 import subprocess
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, Response
 
 from db_manage import db
 from config import get_config, set_lib_root, set_db_file
@@ -163,6 +165,114 @@ def api_parts_delete(pn):
         return jsonify({"ok": True, "message": "器件已删除"})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)})
+
+
+# ===== A2/A3/A5：CSV 导入 / 导出模板 / 导出元件 =====
+REQUIRED_FIELDS = ["Part_Number", "Symbol_Name", "PCB_Footprint"]
+
+
+def _csv_response(rows, filename):
+    """把 dict 列表按 PART_FIELDS 顺序写成 CSV（utf-8-sig，Excel 打开中文不乱码）并下载。"""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(db.PART_FIELDS)
+    for r in rows:
+        writer.writerow(["" if r.get(c) is None else r.get(c) for c in db.PART_FIELDS])
+    data = buf.getvalue().encode("utf-8-sig")
+    return Response(
+        data,
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@app.route("/api/parts/template")
+def api_parts_template():
+    """A3：导出与表结构一致的空白录入模板（含一行示例，可删除）。"""
+    example = {c: "" for c in db.PART_FIELDS}
+    example.update({
+        "Part_Number": "R-0603-10K",
+        "Value": "1K",
+        "Tolerance": "±1%",
+        "Part_Type": "电阻",
+        "Manufacturer": "示例厂商",
+        "MPN": "示例料号",
+        "Description": "示例行，正式录入时请删除本行",
+        "Symbol_Name": "RES_0603",
+        "PCB_Footprint": "R0603",
+        "RoHS": "ROHS",
+        "Lifecycle": "Active",
+    })
+    return _csv_response([example], "part_template.csv")
+
+
+@app.route("/api/parts/export")
+def api_parts_export():
+    """A5：按当前查询条件导出元件清单（BOM）。"""
+    search = request.args.get("search", "")
+    ptype = request.args.get("type", "")
+    rows = db.list_parts(search, ptype)
+    return _csv_response(rows, "parts_export.csv")
+
+
+@app.route("/api/parts/import", methods=["POST"])
+def api_parts_import():
+    """A2：上传 CSV 批量导入，校验必填字段与 Part_Number 唯一性，逐行返回结果。"""
+    f = request.files.get("file")
+    if not f:
+        return jsonify({"ok": False, "error": "未收到 CSV 文件"})
+    raw = f.read()
+    text = None
+    for enc in ("utf-8-sig", "utf-8", "gbk"):
+        try:
+            text = raw.decode(enc)
+            break
+        except UnicodeDecodeError:
+            continue
+    if text is None:
+        return jsonify({"ok": False, "error": "文件编码无法识别，请使用 UTF-8 或 GBK 编码的 CSV"})
+
+    reader = csv.DictReader(io.StringIO(text))
+    headers = [h.strip() for h in (reader.fieldnames or [])]
+    if "Part_Number" not in headers:
+        return jsonify({"ok": False, "error": "CSV 缺少必需的 Part_Number 列，请使用导出的模板"})
+
+    existing = {p["Part_Number"] for p in db.list_parts()}
+    seen = set()
+    inserted = 0
+    skipped = 0
+    errors = []
+
+    for line_no, raw_row in enumerate(reader, start=2):  # 表头为第 1 行
+        row = {(k or "").strip(): (v or "").strip() for k, v in raw_row.items()}
+        pn = row.get("Part_Number", "")
+        if not pn:
+            continue  # 空行跳过
+        missing = [c for c in REQUIRED_FIELDS if not row.get(c)]
+        if missing:
+            skipped += 1
+            errors.append({"row": line_no, "part": pn, "msg": "缺少必填字段：" + "、".join(missing)})
+            continue
+        if pn in existing or pn in seen:
+            skipped += 1
+            errors.append({"row": line_no, "part": pn, "msg": "器件编号重复，已跳过"})
+            continue
+        part = {c: row.get(c, "") for c in db.PART_FIELDS}
+        try:
+            db.create_part(part)
+            inserted += 1
+            seen.add(pn)
+        except Exception as e:
+            skipped += 1
+            errors.append({"row": line_no, "part": pn, "msg": str(e)})
+
+    return jsonify({
+        "ok": True,
+        "total": inserted + skipped,
+        "inserted": inserted,
+        "skipped": skipped,
+        "errors": errors,
+    })
 
 
 @app.route("/api/db/init-sql")

@@ -123,13 +123,24 @@ CREATE_PART_TABLE_SQL = f"""CREATE TABLE {PART_TABLE} (
 
 
 # ===== A1 增删改查 =====
+def _row_values(part, fields):
+    """从 part 取值；Cost 为货币列，空串/空白转 None（NULL），避免类型写入错误。"""
+    vals = []
+    for c in fields:
+        v = part.get(c)
+        if c == "Cost" and (v is None or str(v).strip() == ""):
+            v = None
+        vals.append(v)
+    return vals
+
+
 def create_part(part):
     """新增器件；Part_Number 必填，返回 True"""
     pn = (part.get("Part_Number") or "").strip()
     if not pn:
         raise ValueError("器件编号（Part_Number）不能为空")
     cols = SQL_FIELDS
-    vals = [part.get(c) for c in PART_FIELDS]
+    vals = _row_values(part, PART_FIELDS)
     qs = ",".join("?" * len(cols))
     sql = f"INSERT INTO {PART_TABLE} ({','.join(cols)}) VALUES ({qs})"
     conn = get_connection()
@@ -147,7 +158,7 @@ def update_part(pn, part):
     """按器件编号更新（主键 Part_Number 不可改）；返回受影响行数"""
     col_idx = [i for i, c in enumerate(PART_FIELDS) if c != "Part_Number"]
     sets = ",".join(f"{SQL_FIELDS[i]}=?" for i in col_idx)
-    vals = [part.get(PART_FIELDS[i]) for i in col_idx] + [pn]
+    vals = _row_values(part, [PART_FIELDS[i] for i in col_idx]) + [pn]
     sql = f"UPDATE {PART_TABLE} SET {sets} WHERE [Part_Number]=?"
     conn = get_connection()
     cur = conn.cursor()
