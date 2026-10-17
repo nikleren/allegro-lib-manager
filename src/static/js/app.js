@@ -15,16 +15,10 @@ function setActiveNav() {
   if (id) document.getElementById(id)?.classList.add('active');
 }
 
-// 示例数据：器件库（模块A）
-// PART_TABLE 完整 17 字段示例数据（与《库管理规范》一致）
-const sampleParts = [
-  { pn:'R-0603-10K',   value:'10K',   tolerance:'±1%',   type:'电阻',   mfr:'Uniroyal',   mpn:'0603WAJ0102T5E', desc:'贴片电阻 10K 0603',         sym:'RES0603',    fp:'R0603',    step:'0603.stp',    ds:'doc/R-0603-10K.pdf',  rohs:'ROHS', temp:'-55~155℃',  supplier:'深圳华强北', cost:0.005, life:'Active',   remark:'常用上拉' },
-  { pn:'R-0603-10K_S', value:'10K',   tolerance:'±1%',   type:'电阻',   mfr:'Uniroyal',   mpn:'0603WAJ0102T5E', desc:'贴片电阻 10K 0603 缩焊盘', sym:'RES0603',    fp:'R0603_S',  step:'0603.stp',    ds:'doc/R-0603-10K.pdf',  rohs:'ROHS', temp:'-55~155℃',  supplier:'深圳华强北', cost:0.005, life:'Active',   remark:'高密度用' },
-  { pn:'C-0805-100N',  value:'100nF', tolerance:'±10%',  type:'电容',   mfr:'TDK',        mpn:'C1005X7R1H104K', desc:'贴片电容 100nF 0805',     sym:'CAP0805',    fp:'C0805',    step:'0805.stp',    ds:'doc/C-0805-100N.pdf',  rohs:'ROHS', temp:'-55~125℃',  supplier:'原厂代理',   cost:0.01,  life:'Active',   remark:'去耦' },
-  { pn:'U-STM32F103',  value:'',      tolerance:'',      type:'MCU',    mfr:'ST',         mpn:'STM32F103C8T6',  desc:'ARM Cortex-M3 微控制器', sym:'MCU_LQFP48', fp:'LQFP48',   step:'LQFP48.stp',  ds:'doc/STM32F103.pdf',  rohs:'ROHS', temp:'-40~85℃',   supplier:'立创商城',   cost:8.5,   life:'Active',   remark:'主控' },
-  { pn:'J-XH2-2P',     value:'',      tolerance:'',      type:'连接器', mfr:'JST',        mpn:'XH-2A',         desc:'2P 卧式 XH 连接器',     sym:'CON_XH2',    fp:'JST_XH2',  step:'—',           ds:'',                    rohs:'ROHS', temp:'-25~85℃',   supplier:'—',        cost:0.2,   life:'Active',   remark:'' },
-  { pn:'D-SOD123-1N4148', value:'',   tolerance:'',      type:'二极管', mfr:'Nexperia',   mpn:'1N4148',        desc:'快恢复二极管 1N4148',   sym:'D_SOD123',   fp:'SOD123',   step:'SOD123.stp',  ds:'doc/1N4148.pdf',     rohs:'ROHS', temp:'-55~150℃',  supplier:'—',        cost:0.03,  life:'Obsolete', remark:'待淘汰' }
-];
+// 模块A：真实数据状态（经后端 API 读取 Access）
+let partsCache = [];      // 当前查询结果缓存（供编辑/删除定位）
+let editingPn = null;     // 正在编辑的器件编号
+let dbInfo = null;        // 数据库状态（/api/db/info）
 
 // 示例数据：文件校验（模块B）——按目录分组
 const sampleFiles = {
@@ -79,7 +73,7 @@ echo 完成。`;
 
 document.addEventListener('DOMContentLoaded', () => {
   setActiveNav();
-  if (document.getElementById('partTable')) renderParts();
+  if (document.getElementById('partTable')) { loadDbInfo(); loadParts(); loadInitSql(); }
   if (document.getElementById('fileTable')) renderFiles();
   if (document.getElementById('modelTable')) renderModels();
   if (document.getElementById('envTable')) renderEnv();
@@ -88,20 +82,91 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
 });
 
-// 模块A：渲染器件表格
-function renderParts() {
+// 模块A：读取数据库状态（驱动/库/表）
+function loadDbInfo() {
+  fetch('/api/db/info')
+    .then(r => r.json())
+    .then(d => {
+      dbInfo = d;
+      renderDbInfo();
+    })
+    .catch(() => { dbInfo = null; renderDbInfo(); });
+}
+
+function renderDbInfo() {
+  const bar = document.getElementById('dbStatusBar');
+  const init = document.getElementById('initCard');
+  if (!bar) return;
+  if (!dbInfo) { bar.style.display = 'block'; bar.innerHTML = '<b>❌</b> 后端不可达'; return; }
+  const d = dbInfo;
+  let html = '';
+  if (!d.db_exists) {
+    html = '<b>❌</b> 数据库文件不存在：<code>' + (d.db_path || '') + '</code>';
+  } else if (!d.connected) {
+    html = '<b>⚠️</b> 数据库连接失败：' + (d.error || '');
+  } else if (!d.has_part_table) {
+    html = '<b>⚠️</b> 数据库存在，但缺少 <code>PART_TABLE</code> 表（需先建表）';
+  } else {
+    html = '<b>✅</b> 数据库已连接 · 表：<code>' + (d.tables || []).join('</code>, <code>') + '</code>';
+  }
+  if (d.drivers && d.drivers.length) html += '<br>ODBC 驱动：<code>' + d.drivers.join('</code> / <code>') + '</code>';
+  bar.innerHTML = html;
+  bar.style.display = 'block';
+  if (init) {
+    init.style.display = (d.db_exists && d.connected && d.has_part_table) ? 'none' : 'block';
+  }
+  if (init && d.db_exists && !d.has_part_table) {
+    const h = document.getElementById('initHint');
+    if (h) h.textContent = '数据库存在但未建表。请在 Access 中打开 ' + (d.db_path || '') + ' 后执行以下 SQL：';
+  } else if (init && !d.db_exists) {
+    const h = document.getElementById('initHint');
+    if (h) h.textContent = '数据库文件尚未创建。请在 Access 中新建数据库文件于：' + (d.db_path || '') + '，并执行以下 SQL 建表。';
+  }
+}
+
+// 加载建表 SQL 到指引框
+function loadInitSql() {
+  fetch('/api/db/init-sql')
+    .then(r => r.json())
+    .then(d => { const b = document.getElementById('initSqlBox'); if (b && d.ok) b.textContent = d.sql; })
+    .catch(() => {});
+}
+function copyInitSql() {
+  const b = document.getElementById('initSqlBox');
+  if (!b) return;
+  navigator.clipboard.writeText(b.textContent).then(() => toast('SQL 已复制'), () => toast('复制失败，请手动选择复制'));
+}
+
+// 模块A：查询并渲染器件列表
+function loadParts() {
+  const s = document.getElementById('searchPn') ? document.getElementById('searchPn').value : '';
+  const t = document.getElementById('searchType') ? document.getElementById('searchType').value : '全部类型';
+  const type = (t === '全部类型') ? '' : t;
+  fetch('/api/parts?search=' + encodeURIComponent(s) + '&type=' + encodeURIComponent(type))
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) { toast(d.error || '查询失败'); return; }
+      partsCache = d.rows;
+      renderParts(d.rows);
+    })
+    .catch(() => toast('加载器件列表失败'));
+}
+
+function renderParts(rows) {
   const tb = document.querySelector('#partTable tbody');
-  const html = sampleParts.map(p => `
+  if (!tb) return;
+  const html = (rows || []).map(p => `
     <tr>
-      <td>${p.pn}</td><td>${p.value}</td><td>${p.tolerance}</td><td>${p.type}</td>
-      <td>${p.mfr}</td><td>${p.mpn}</td><td>${p.desc}</td><td>${p.sym}</td>
-      <td>${p.fp}</td><td>${p.step}</td><td>${p.ds}</td><td>${p.rohs}</td>
-      <td>${p.temp}</td><td>${p.supplier}</td><td>${p.cost}</td>
-      <td><span class="tag ${p.life==='Active'?'tag-ok':'tag-warn'}">${p.life}</span></td>
-      <td>${p.remark}</td>
-      <td><a href="javascript:;" class="btn" onclick="editPart('${p.pn}')">编辑</a> <a href="javascript:;" class="btn" onclick="delPart('${p.pn}')">删除</a></td>
+      <td>${p.Part_Number ?? ''}</td><td>${p.Value ?? ''}</td><td>${p.Tolerance ?? ''}</td><td>${p.Part_Type ?? ''}</td>
+      <td>${p.Manufacturer ?? ''}</td><td>${p.MPN ?? ''}</td><td>${p.Description ?? ''}</td><td>${p.Symbol_Name ?? ''}</td>
+      <td>${p.PCB_Footprint ?? ''}</td><td>${p.Step_Model ?? ''}</td><td>${p.Datasheet ?? ''}</td><td>${p.RoHS ?? ''}</td>
+      <td>${p.Temp_Range ?? ''}</td><td>${p.Supplier ?? ''}</td><td>${p.Cost ?? ''}</td>
+      <td><span class="tag ${p.Lifecycle === 'Active' ? 'tag-ok' : 'tag-warn'}">${p.Lifecycle ?? ''}</span></td>
+      <td>${p.Remark ?? ''}</td>
+      <td><a href="javascript:;" class="btn" onclick="editPart('${p.Part_Number}')">编辑</a>
+          <a href="javascript:;" class="btn" onclick="delPart('${p.Part_Number}')">删除</a></td>
     </tr>`).join('');
-  tb.innerHTML = html;
+  tb.innerHTML = html || '<tr><td colspan="18" class="empty">无器件数据（或尚未建表）</td></tr>';
 }
 
 // 模块B：渲染文件校验表（按当前目录）
@@ -178,28 +243,57 @@ function initTabs() {
   });
 }
 
-// 删除器件：二次确认（需求 G1）
+// 删除器件：二次确认（需求 G1）→ 真实删除
 function delPart(pn) {
-  if (window.confirm('确认删除器件「' + pn + '」？此操作不可撤销。')) {
-    toast('器件已删除（原型，未写入数据库）：' + pn);
-  }
-}
-function editPart(pn) {
-  openPartModal();
-  document.getElementById('partModalTitle').textContent = '编辑器件：' + pn;
+  if (!window.confirm('确认删除器件「' + pn + '」？此操作不可撤销。')) return;
+  fetch('/api/parts/' + encodeURIComponent(pn), { method: 'DELETE' })
+    .then(r => r.json())
+    .then(d => { toast(d.ok ? d.message : (d.error || '删除失败')); if (d.ok) loadParts(); })
+    .catch(() => toast('删除失败（后端不可达）'));
 }
 
-// 新增/编辑器件 模态框（原型）
-function openPartModal() {
-  document.getElementById('partModal').classList.add('show');
-  document.getElementById('partModalTitle').textContent = '新增器件';
+// 编辑器件：从缓存定位并回填表单
+function editPart(pn) {
+  const p = partsCache.find(x => x.Part_Number === pn);
+  openPartModal(p);
+}
+
+// 新增/编辑器件 模态框
+const FORM_MAP = {
+  f_pn: 'Part_Number', f_value: 'Value', f_tolerance: 'Tolerance', f_type: 'Part_Type',
+  f_mfr: 'Manufacturer', f_mpn: 'MPN', f_desc: 'Description', f_sym: 'Symbol_Name',
+  f_fp: 'PCB_Footprint', f_step: 'Step_Model', f_ds: 'Datasheet', f_rohs: 'RoHS',
+  f_temp: 'Temp_Range', f_supplier: 'Supplier', f_cost: 'Cost', f_life: 'Lifecycle', f_remark: 'Remark'
+};
+
+function openPartModal(part) {
+  editingPn = (part && part.Part_Number) || null;
+  document.getElementById('partModalTitle').textContent = part ? ('编辑器件：' + part.Part_Number) : '新增器件';
+  const box = document.getElementById('partModal');
+  box.classList.add('show');
+  Object.keys(FORM_MAP).forEach(id => {
+    const field = FORM_MAP[id];
+    const el = document.getElementById(id);
+    if (el) el.value = (part && part[field] != null) ? part[field] : '';
+  });
 }
 function closePartModal() {
   document.getElementById('partModal').classList.remove('show');
 }
 function savePart() {
-  closePartModal();
-  toast('器件已保存（原型，未写入数据库）');
+  const part = {};
+  Object.keys(FORM_MAP).forEach(id => { part[FORM_MAP[id]] = document.getElementById(id).value.trim(); });
+  if (!part.Part_Number) { toast('器件编号（Part_Number）不能为空'); return; }
+  const isNew = !editingPn;
+  const url = isNew ? '/api/parts' : '/api/parts/' + encodeURIComponent(editingPn);
+  const method = isNew ? 'POST' : 'PUT';
+  fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(part) })
+    .then(r => r.json())
+    .then(d => {
+      toast(d.ok ? d.message : (d.error || '保存失败'));
+      if (d.ok) { closePartModal(); loadParts(); }
+    })
+    .catch(() => toast('保存失败（后端不可达）'));
 }
 
 // 占位动作：原型阶段按钮点击提示

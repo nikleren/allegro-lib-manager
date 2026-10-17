@@ -25,8 +25,11 @@
       <p>管理 Access 元件库（PART_TABLE）· 数据源：Allegro_CIS_DB.accdb</p>
     </div>
 
+    <div id="dbStatusBar" class="card db-status" style="display:none;"></div>
+
     <div class="toolbar">
       <button class="btn btn-primary" onclick="openPartModal()">＋ 新增器件</button>
+      <button class="btn" onclick="loadParts()">⟳ 刷新</button>
       <button class="btn" onclick="toast('导入 CSV')">导入 CSV</button>
       <button class="btn" onclick="toast('导出模板')">导出 CSV 模板</button>
       <button class="btn" onclick="toast('生成 DBC')">生成 DBC</button>
@@ -34,9 +37,9 @@
     </div>
 
     <div class="search-box">
-      <input type="text" placeholder="搜索器件编号 / 型号 / 描述...">
-      <select><option>全部类型</option><option>电阻</option><option>电容</option><option>电感</option><option>连接器</option><option>IC</option></select>
-      <button class="btn btn-primary">查询</button>
+      <input id="searchPn" type="text" placeholder="搜索器件编号 / 型号 / 描述...">
+      <select id="searchType"><option>全部类型</option><option>电阻</option><option>电容</option><option>电感</option><option>连接器</option><option>IC</option><option>二极管</option><option>其他</option></select>
+      <button class="btn btn-primary" onclick="loadParts()">查询</button>
     </div>
 
     <div class="card">
@@ -47,6 +50,17 @@
         </thead>
         <tbody></tbody>
       </table>
+    </div>
+
+    <!-- 数据库/表缺失时的建表指引 -->
+    <div class="card" id="initCard" style="display:none;border-color:var(--warn);">
+      <h3>⚠️ 需要先初始化数据库</h3>
+      <p class="hint" id="initHint"></p>
+      <p class="hint">在 Access 中打开数据库文件后执行以下 SQL 创建 PART_TABLE 表：</p>
+      <pre class="code" id="initSqlBox" style="white-space:pre-wrap;"></pre>
+      <div class="modal-actions" style="margin-top:10px;">
+        <button class="btn" onclick="copyInitSql()">📋 复制 SQL</button>
+      </div>
     </div>
   </main>
 </div>
