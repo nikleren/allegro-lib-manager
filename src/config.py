@@ -44,8 +44,27 @@ def _read_lib_root():
 LIB_ROOT = _read_lib_root()
 
 
+def _read_db_file():
+    """读取配置文件中配置的数据库文件路径；未配置返回空串"""
+    try:
+        cp = configparser.ConfigParser()
+        cp.read(CONFIG_INI, encoding="utf-8")
+        p = cp.get("paths", "db_file", fallback="").strip()
+        if p:
+            return os.path.abspath(os.path.expandvars(p))
+    except Exception:
+        pass
+    return ""
+
+
+# 可配置的数据库文件路径（G5）；空串表示未配置，db_path() 按库根推导
+DB_FILE = _read_db_file()
+
+
 def db_path():
-    """CIS Access 数据库路径（基于当前库根动态解析）"""
+    """CIS Access 数据库路径：优先用配置的 db_file（G5），未配置则按库根推导"""
+    if DB_FILE:
+        return DB_FILE
     return os.path.join(LIB_ROOT, DIRS["database"], "Allegro_CIS_DB.accdb")
 
 
@@ -63,6 +82,7 @@ def get_config():
     return {
         "lib_root": LIB_ROOT,
         "config_ini": CONFIG_INI,
+        "db_file": DB_FILE,
         "db_path": db_path(),
         "subdirs": {
             k: {
@@ -96,3 +116,28 @@ def set_lib_root(path):
         cp.write(f)
     LIB_ROOT = p
     return True, f"库根已更新：{p}"
+
+
+def set_db_file(path):
+    """校验并保存新的数据库文件路径；传空串表示恢复为按库根推导。"""
+    global DB_FILE
+    p = (path or "").strip()
+    p = os.path.abspath(os.path.expandvars(p)) if p else ""
+    if p:
+        parent = os.path.dirname(p)
+        if not os.path.isdir(parent):
+            return False, f"数据库所在目录不存在：{parent}"
+        if not p.lower().endswith((".accdb", ".mdb")):
+            return False, "数据库文件需为 .accdb 或 .mdb 格式"
+    # 写回 config.ini
+    cp = configparser.ConfigParser()
+    if os.path.isfile(CONFIG_INI):
+        cp.read(CONFIG_INI, encoding="utf-8")
+    if not cp.has_section("paths"):
+        cp.add_section("paths")
+    cp.set("paths", "db_file", p)  # 空串 = 未配置，按库根推导
+    os.makedirs(os.path.dirname(CONFIG_INI), exist_ok=True)
+    with open(CONFIG_INI, "w", encoding="utf-8") as f:
+        cp.write(f)
+    DB_FILE = p
+    return True, ("数据库路径已更新：" + p) if p else "数据库路径已恢复为按库根推导"

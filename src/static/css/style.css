@@ -89,6 +89,10 @@ th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--bor
 th { background: #f7fafc; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
 tbody tr:hover { background: #f7fafc; }
 
+/* 列多时横向滚动，避免挤压/溢出：表按内容宽度展开 */
+.table-scroll { overflow-x: auto; }
+.table-scroll table { width: max-content; }
+
 /* 状态标签 */
 .tag { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 12px; }
 .tag-ok { background: #f0fff4; color: var(--ok); }

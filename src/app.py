@@ -4,10 +4,13 @@
 访问：http://127.0.0.1:5000
 """
 import os
+import sys
+import time
+import subprocess
 from flask import Flask, render_template, jsonify, request
 
 from db_manage import db
-from config import get_config, set_lib_root
+from config import get_config, set_lib_root, set_db_file
 
 # 页面映射（key 兼容带 / 不带 .html 后缀）
 PAGES = {
@@ -21,6 +24,7 @@ PAGES = {
 
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False  # 中文正常输出
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0  # 静态文件不缓存，避免修改后浏览器仍用旧样式/脚本
 
 
 @app.route("/")
@@ -46,11 +50,65 @@ def api_config_get():
 @app.route("/api/config", methods=["POST"])
 def api_config_post():
     data = request.get_json(silent=True) or {}
-    lib_root = (data.get("lib_root") or "").strip()
-    ok, msg = set_lib_root(lib_root)
+    msgs = []
+    ok = True
+    if data.get("lib_root") is not None:
+        o, m = set_lib_root(data.get("lib_root"))
+        ok = ok and o
+        msgs.append(m)
+    if data.get("db_file") is not None:
+        o, m = set_db_file(data.get("db_file"))
+        ok = ok and o
+        msgs.append(m)
     if ok:
-        return jsonify({"ok": True, "message": msg, "config": get_config()})
-    return jsonify({"ok": False, "message": msg, "config": None})
+        return jsonify({"ok": True, "message": "；".join(msgs) or "配置已保存", "config": get_config()})
+    return jsonify({"ok": False, "message": "；".join(msgs), "config": None})
+
+
+# ===== 数据库文件"打开选择"对话框（Windows 原生） =====
+@app.route("/api/config/browse-db")
+def api_config_browse_db():
+    path = _browse_access_file()
+    if path:
+        return jsonify({"ok": True, "path": path})
+    return jsonify({"ok": False, "message": "未选择文件"})
+
+
+def _browse_access_file():
+    """在用户交互桌面弹出文件选择对话框，返回路径或 None。
+
+    背景：后端由内置/沙箱 python 启动，其窗口站与用户桌面隔离，
+    直接（含子进程）弹 tkinter/WinForms 对话框都不可见。
+    解决：动态生成 VBS，经 explorer.exe（用户交互 shell）→ wscript 启动
+    系统 PowerShell 弹 WinForms 打开文件框，选中后写入结果文件，本函数轮询读取。
+    """
+    base = os.path.dirname(os.path.abspath(__file__))
+    ps1 = os.path.join(base, "browse_dialog.ps1")
+    vbs = os.path.join(base, "browse_launch.vbs")
+    out = os.path.join(base, "_browse_result.txt")
+    try:
+        if os.path.exists(out):
+            os.remove(out)
+        # 生成纯 ASCII 的 VBS（反斜杠在 VBS 字符串中无需转义，内嵌引号用 "" 转义）
+        with open(vbs, "w", encoding="ascii") as f:
+            f.write('Set sh = CreateObject("WScript.Shell")\n')
+            f.write('sh.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ""%s"" -Out ""%s""", 0, False\n' % (ps1, out))
+        # 经 explorer 在用户交互桌面启动（不等待）
+        subprocess.Popen(["explorer.exe", vbs])
+        # 轮询结果文件（最多 10 分钟）
+        for _ in range(600):
+            if os.path.exists(out):
+                with open(out, encoding="utf-8") as f:
+                    path = f.read().strip()
+                try:
+                    os.remove(out)
+                except OSError:
+                    pass
+                return path or None
+            time.sleep(1)
+    except Exception:
+        return None
+    return None
 
 
 # ===== 模块A：数据库 API =====

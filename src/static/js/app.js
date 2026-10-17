@@ -110,6 +110,7 @@ function renderDbInfo() {
     html = '<b>✅</b> 数据库已连接 · 表：<code>' + (d.tables || []).join('</code>, <code>') + '</code>';
   }
   if (d.drivers && d.drivers.length) html += '<br>ODBC 驱动：<code>' + d.drivers.join('</code> / <code>') + '</code>';
+  if (d.db_path) html += '<br>当前数据库路径：<code>' + d.db_path + '</code>';
   bar.innerHTML = html;
   bar.style.display = 'block';
   if (init) {
@@ -157,7 +158,7 @@ function renderParts(rows) {
   if (!tb) return;
   const html = (rows || []).map(p => `
     <tr>
-      <td>${p.Part_Number ?? ''}</td><td>${p.Value ?? ''}</td><td>${p.Tolerance ?? ''}</td><td>${p.Part_Type ?? ''}</td>
+      <td>${p.Part_Number ?? ''}</td><td>${p.Value || p.MPN || ''}</td><td>${p.Tolerance ?? ''}</td><td>${p.Part_Type ?? ''}</td>
       <td>${p.Manufacturer ?? ''}</td><td>${p.MPN ?? ''}</td><td>${p.Description ?? ''}</td><td>${p.Symbol_Name ?? ''}</td>
       <td>${p.PCB_Footprint ?? ''}</td><td>${p.Step_Model ?? ''}</td><td>${p.Datasheet ?? ''}</td><td>${p.RoHS ?? ''}</td>
       <td>${p.Temp_Range ?? ''}</td><td>${p.Supplier ?? ''}</td><td>${p.Cost ?? ''}</td>
@@ -311,6 +312,8 @@ function loadConfig() {
     .then(cfg => {
       const inp = document.getElementById('libRootInput');
       if (inp) inp.value = cfg.lib_root;
+      const dbin = document.getElementById('dbFileInput');
+      if (dbin) dbin.value = cfg.db_file || '';
       const sub = document.getElementById('pageSub');
       if (sub) sub.textContent = '单机 · 约 300~500 器件 · 库根：' + cfg.lib_root;
       renderLibDirs(cfg);
@@ -354,3 +357,47 @@ function saveLibRoot() {
     })
     .catch(() => { st.textContent = '❌ 保存失败（后端不可达）'; st.className = 'cfg-status err'; });
 }
+
+// G5：保存数据库文件路径（空串 = 恢复按库根推导）
+function saveDbFile() {
+  const v = document.getElementById('dbFileInput').value.trim();
+  const st = document.getElementById('dbFileStatus');
+  fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ db_file: v })
+  })
+    .then(r => r.json())
+    .then(res => {
+      if (res.ok) {
+        st.textContent = '✅ ' + res.message;
+        st.className = 'cfg-status ok';
+        renderLibDirs(res.config);
+      } else {
+        st.textContent = '❌ ' + res.message;
+        st.className = 'cfg-status err';
+      }
+    })
+    .catch(() => { st.textContent = '❌ 保存失败（后端不可达）'; st.className = 'cfg-status err'; });
+}
+
+// 数据库文件：打开系统文件选择对话框，选择后回填输入框
+function browseDbFile() {
+  const st = document.getElementById('dbFileStatus');
+  st.textContent = '⏳ 请在弹出的窗口中选择数据库文件…';
+  st.className = 'cfg-status';
+  fetch('/api/config/browse-db')
+    .then(r => r.json())
+    .then(res => {
+      if (res.ok && res.path) {
+        document.getElementById('dbFileInput').value = res.path;
+        st.textContent = '✅ 已选择，点击"保存数据库路径"生效';
+        st.className = 'cfg-status ok';
+      } else {
+        st.textContent = (res.message || '未选择文件');
+        st.className = 'cfg-status';
+      }
+    })
+    .catch(() => { st.textContent = '❌ 打开文件对话框失败'; st.className = 'cfg-status err'; });
+}
+

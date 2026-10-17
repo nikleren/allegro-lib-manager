@@ -11,3 +11,7 @@ config.ini
 
 # 临时/下载目录
 _tmp*/
+
+# 文件选择对话框运行时产物
+src/_browse_result.txt
+src/browse_launch.vbs

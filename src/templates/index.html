@@ -57,7 +57,14 @@
         <button class="btn" onclick="saveLibRoot()">💾 保存库根</button>
         <span id="cfgStatus" class="cfg-status"></span>
       </div>
-      <p class="hint">库根与程序部署目录分离，可指向程序目录之外的任意路径；各子目录均基于库根解析。</p>
+      <div class="cfg-row">
+        <label for="dbFileInput">数据库文件：</label>
+        <input id="dbFileInput" type="text" class="cfg-input" placeholder="留空 = 按库根推导（database\Allegro_CIS_DB.accdb）">
+        <button class="btn" onclick="browseDbFile()">📂 浏览…</button>
+        <button class="btn" onclick="saveDbFile()">💾 保存数据库路径</button>
+        <span id="dbFileStatus" class="cfg-status"></span>
+      </div>
+      <p class="hint">库根与程序部署目录分离，可指向程序目录之外的任意路径；各子目录均基于库根解析。数据库文件路径可单独配置（G5）。</p>
       <table id="libDirTable">
         <thead><tr><th>用途</th><th>本地路径</th><th>状态</th></tr></thead>
         <tbody></tbody>
