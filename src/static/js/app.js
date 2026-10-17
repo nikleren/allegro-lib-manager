@@ -305,6 +305,15 @@ function exportTemplate() {
   window.location.href = '/api/parts/template';
 }
 
+/* ===== A5：导出元件（按当前查询条件导出 BOM） ===== */
+function exportParts() {
+  const s = document.getElementById('searchPn') ? document.getElementById('searchPn').value : '';
+  const t = document.getElementById('searchType') ? document.getElementById('searchType').value : '全部类型';
+  const type = (t === '全部类型') ? '' : t;
+  window.location.href = '/api/parts/export?search=' +
+    encodeURIComponent(s) + '&type=' + encodeURIComponent(type);
+}
+
 /* ===== A2：CSV 批量导入（浏览器原生选文件，上传后报告成功/跳过/逐行错误） ===== */
 function importParts() {
   const inp = document.getElementById('importFile');
