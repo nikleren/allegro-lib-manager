@@ -7,6 +7,7 @@ import os
 from flask import Flask, render_template, jsonify, request
 
 from db_manage import db
+from config import get_config, set_lib_root
 
 # 页面映射
 PAGES = {
@@ -33,6 +34,22 @@ def show_page(page):
     if f:
         return render_template(f)
     return "Not Found", 404
+
+
+# ===== G4：库根目录配置 API =====
+@app.route("/api/config", methods=["GET"])
+def api_config_get():
+    return jsonify(get_config())
+
+
+@app.route("/api/config", methods=["POST"])
+def api_config_post():
+    data = request.get_json(silent=True) or {}
+    lib_root = (data.get("lib_root") or "").strip()
+    ok, msg = set_lib_root(lib_root)
+    if ok:
+        return jsonify({"ok": True, "message": msg, "config": get_config()})
+    return jsonify({"ok": False, "message": msg, "config": None})
 
 
 # ===== 模块A：数据库 API =====

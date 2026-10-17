@@ -1,0 +1,13 @@
+# Python 运行时产物
+__pycache__/
+*.pyc
+*.pyo
+
+# 运行时配置（含本机库根路径，不纳入版本管理）
+config.ini
+
+# CIS Access 数据库（二进制，位置随库根变化）
+*.accdb
+
+# 临时/下载目录
+_tmp*/

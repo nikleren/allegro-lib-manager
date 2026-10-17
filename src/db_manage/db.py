@@ -2,7 +2,7 @@
 """Access 数据库连接与基础操作（pyodbc）"""
 import os
 import pyodbc
-from config import DB_PATH, ODBC_DRIVER
+from config import db_path, ODBC_DRIVER
 
 PART_TABLE = "PART_TABLE"
 
@@ -16,7 +16,7 @@ PART_FIELDS = [
 
 def db_exists():
     """数据库文件是否存在"""
-    return os.path.isfile(DB_PATH)
+    return os.path.isfile(db_path())
 
 
 def check_driver():
@@ -30,8 +30,8 @@ def check_driver():
 def get_connection():
     """建立 Access 连接（若文件不存在则抛错）"""
     if not db_exists():
-        raise FileNotFoundError(f"数据库文件不存在：{DB_PATH}")
-    conn_str = f"DRIVER={{{ODBC_DRIVER}}};DBQ={DB_PATH};"
+        raise FileNotFoundError(f"数据库文件不存在：{db_path()}")
+    conn_str = f"DRIVER={{{ODBC_DRIVER}}};DBQ={db_path()};"
     return pyodbc.connect(conn_str)
 
 
@@ -39,12 +39,12 @@ def db_status():
     """数据库连接状态检查（供 /api/db/info）"""
     status = {
         "db_exists": db_exists(),
-        "db_path": DB_PATH,
+        "db_path": db_path(),
         "drivers": check_driver(),
         "connected": False,
     }
     if not db_exists():
-        status["error"] = f"数据库文件不存在：{DB_PATH}，请先在 Access 中创建并建表"
+        status["error"] = f"数据库文件不存在：{db_path()}，请先在 Access 中创建并建表"
         return status
     try:
         conn = get_connection()

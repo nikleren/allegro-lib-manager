@@ -22,7 +22,7 @@
   <main class="main">
     <div class="page-header">
       <h1>首页 · 库总览</h1>
-      <p>单机 · 约 300~500 器件 · 库根：D:\my_workspace\project\allegroLibmm</p>
+      <p id="pageSub">单机 · 约 300~500 器件</p>
     </div>
 
     <div class="stat-grid">
@@ -49,20 +49,20 @@
       </table>
     </div>
 
-    <div class="card">
-      <h3>Allegro 元件库 · 本地目录位置</h3>
-      <table>
-        <thead><tr><th>用途</th><th>本地路径</th></tr></thead>
-        <tbody>
-          <tr><td>库根目录</td><td><code>D:\my_workspace\project\allegroLibmm</code></td></tr>
-          <tr><td>PCB 封装</td><td><code>...\symbol\footprint</code></td></tr>
-          <tr><td>焊盘</td><td><code>...\symbol\pad</code></td></tr>
-          <tr><td>花焊盘</td><td><code>...\symbol\flash</code></td></tr>
-          <tr><td>3D 模型</td><td><code>...\3d</code></td></tr>
-          <tr><td>原理图符号</td><td><code>...\schematic</code></td></tr>
-          <tr><td>CIS 数据库</td><td><code>...\database\Allegro_CIS_DB.accdb</code></td></tr>
-        </tbody>
+    <div class="card" style="border-color:var(--accent);">
+      <h3>Allegro 元件库 · 本地目录位置（可配置）</h3>
+      <div class="cfg-row">
+        <label for="libRootInput">库根目录：</label>
+        <input id="libRootInput" type="text" class="cfg-input" placeholder="例如 D:\AllegroLib">
+        <button class="btn" onclick="saveLibRoot()">💾 保存库根</button>
+        <span id="cfgStatus" class="cfg-status"></span>
+      </div>
+      <p class="hint">库根与程序部署目录分离，可指向程序目录之外的任意路径；各子目录均基于库根解析。</p>
+      <table id="libDirTable">
+        <thead><tr><th>用途</th><th>本地路径</th><th>状态</th></tr></thead>
+        <tbody></tbody>
       </table>
+      <p class="hint" id="dbPathHint"></p>
     </div>
 
     <div class="card">

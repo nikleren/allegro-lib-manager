@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('modelTable')) renderModels();
   if (document.getElementById('envTable')) renderEnv();
   if (document.getElementById('gitConfigTable')) renderGit();
+  if (document.getElementById('libDirTable')) loadConfig();
   initTabs();
 });
 
@@ -203,3 +204,59 @@ function savePart() {
 
 // 占位动作：原型阶段按钮点击提示
 window.toast = (msg) => alert('[原型] ' + msg);
+
+/* ===== G4：库根目录配置 ===== */
+const DIR_LABEL = {
+  database: 'CIS 数据库', schematic: '原理图符号', footprint: 'PCB 封装',
+  pad: '焊盘', flash: '花焊盘', mech: '机械符号', model3d: '3D 模型', doc: '数据手册'
+};
+
+function loadConfig() {
+  fetch('/api/config')
+    .then(r => r.json())
+    .then(cfg => {
+      const inp = document.getElementById('libRootInput');
+      if (inp) inp.value = cfg.lib_root;
+      const sub = document.getElementById('pageSub');
+      if (sub) sub.textContent = '单机 · 约 300~500 器件 · 库根：' + cfg.lib_root;
+      renderLibDirs(cfg);
+    })
+    .catch(() => toast('加载库根配置失败'));
+}
+
+function renderLibDirs(cfg) {
+  const tb = document.querySelector('#libDirTable tbody');
+  if (!tb) return;
+  tb.innerHTML = Object.keys(cfg.subdirs).map(k => `
+    <tr>
+      <td>${DIR_LABEL[k] || k}</td>
+      <td><code>${cfg.subdirs[k].path}</code></td>
+      <td><span class="tag ${cfg.subdirs[k].exists ? 'tag-ok' : 'tag-warn'}">${cfg.subdirs[k].exists ? '存在' : '缺失'}</span></td>
+    </tr>`).join('');
+  const hint = document.getElementById('dbPathHint');
+  if (hint) hint.textContent = 'CIS 数据库路径：' + cfg.db_path;
+}
+
+function saveLibRoot() {
+  const v = document.getElementById('libRootInput').value.trim();
+  const st = document.getElementById('cfgStatus');
+  fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lib_root: v })
+  })
+    .then(r => r.json())
+    .then(res => {
+      if (res.ok) {
+        st.textContent = '✅ ' + res.message;
+        st.className = 'cfg-status ok';
+        const sub = document.getElementById('pageSub');
+        if (sub) sub.textContent = '单机 · 约 300~500 器件 · 库根：' + res.config.lib_root;
+        renderLibDirs(res.config);
+      } else {
+        st.textContent = '❌ ' + res.message;
+        st.className = 'cfg-status err';
+      }
+    })
+    .catch(() => { st.textContent = '❌ 保存失败（后端不可达）'; st.className = 'cfg-status err'; });
+}

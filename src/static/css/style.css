@@ -143,3 +143,17 @@ code { font-family: Consolas, monospace; }
   width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
 }
 .modal .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+/* G4：库根配置 */
+.cfg-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.cfg-row label { font-weight: 600; }
+.cfg-input {
+  flex: 1; min-width: 300px;
+  padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+  font-family: Consolas, monospace;
+}
+.cfg-status { font-size: 13px; }
+.cfg-status.ok { color: var(--ok); }
+.cfg-status.err { color: var(--danger); }
+.hint { color: var(--text-muted); font-size: 12px; margin: 6px 0 12px; }
+
