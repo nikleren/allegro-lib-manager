@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Allegro 库管理 · 首页</title>
+  <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">Allegro 库管理</div>
+    <nav>
+      <a id="nav-index" href="index.html">🏠 首页</a>
+      <a id="nav-db" href="db.html">🗄️ CIS 数据库</a>
+      <a id="nav-files" href="files.html">📁 文件管理</a>
+      <a id="nav-models" href="models.html">🧊 3D 模型</a>
+      <a id="nav-env" href="env.html">⚙️ env 配置</a>
+      <a id="nav-git" href="git.html">🔄 Git 同步</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>首页 · 库总览</h1>
+      <p>单机 · 约 300~500 器件 · 库根：D:\my_workspace\project\allegroLibmm</p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat"><div class="num">326</div><div class="lbl">器件总数</div></div>
+      <div class="stat"><div class="num">58</div><div class="lbl">封装数量</div></div>
+      <div class="stat"><div class="num">41</div><div class="lbl">焊盘数量</div></div>
+      <div class="stat"><div class="num">7</div><div class="lbl">3D 缺失</div></div>
+      <div class="stat"><div class="num">3</div><div class="lbl">重复文件</div></div>
+    </div>
+
+    <div class="card" style="border-color:var(--warn);">
+      <h3>🔄 库版本与更新</h3>
+      <table>
+        <thead><tr><th>项目</th><th>值</th></tr></thead>
+        <tbody>
+          <tr><td>当前库版本</td><td><code>a1b2c3d</code> · 分支 <code>main</code> · 2026-10-16 15:30</td></tr>
+          <tr><td>远程仓库</td><td><code>https://github.com/user/allegro-lib.git</code></td></tr>
+          <tr>
+            <td>更新状态</td>
+            <td><span class="tag tag-warn">有更新 · 建议拉取新库</span>
+              <button class="btn" onclick="toast('从远程拉取新库')" style="margin-left:10px;">⬇ 立即拉取</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Allegro 元件库 · 本地目录位置</h3>
+      <table>
+        <thead><tr><th>用途</th><th>本地路径</th></tr></thead>
+        <tbody>
+          <tr><td>库根目录</td><td><code>D:\my_workspace\project\allegroLibmm</code></td></tr>
+          <tr><td>PCB 封装</td><td><code>...\symbol\footprint</code></td></tr>
+          <tr><td>焊盘</td><td><code>...\symbol\pad</code></td></tr>
+          <tr><td>花焊盘</td><td><code>...\symbol\flash</code></td></tr>
+          <tr><td>3D 模型</td><td><code>...\3d</code></td></tr>
+          <tr><td>原理图符号</td><td><code>...\schematic</code></td></tr>
+          <tr><td>CIS 数据库</td><td><code>...\database\Allegro_CIS_DB.accdb</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>模块导航</h3>
+      <table>
+        <thead><tr><th>模块</th><th>功能</th><th>入口</th></tr></thead>
+        <tbody>
+          <tr><td>CIS 数据库</td><td>器件增删改查、CSV 导入/导出、生成 DBC、导出 BOM</td><td><a class="btn" href="db.html">进入 →</a></td></tr>
+          <tr><td>文件管理</td><td>浏览、校验、查重、报表（封装/焊盘/符号）</td><td><a class="btn" href="files.html">进入 →</a></td></tr>
+          <tr><td>3D 模型</td><td>封装 ↔ .stp 对应检查、缺失提示</td><td><a class="btn" href="models.html">进入 →</a></td></tr>
+          <tr><td>env 配置</td><td>读取 env、生成关联库目录的 .bat 脚本</td><td><a class="btn" href="env.html">进入 →</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<script src="../static/js/app.js"></script>
+</body>
+</html>

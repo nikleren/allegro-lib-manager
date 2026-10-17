@@ -1,0 +1,145 @@
+/* ===== Allegro 库管理软件 · 全局样式（原型） ===== */
+:root {
+  --primary: #2b6cb0;
+  --primary-dark: #1f4e7a;
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #1a202c;
+  --text-muted: #718096;
+  --ok: #38a169;
+  --warn: #dd6b20;
+  --danger: #e53e3e;
+  --sidebar-w: 220px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+/* 布局 */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--primary-dark);
+  color: #fff;
+  padding: 16px 0;
+  flex-shrink: 0;
+}
+.sidebar .brand {
+  font-size: 17px; font-weight: 700;
+  padding: 8px 20px 18px;
+  border-bottom: 1px solid rgba(255,255,255,.15);
+  margin-bottom: 12px;
+}
+.sidebar nav a {
+  display: block;
+  padding: 11px 20px;
+  color: rgba(255,255,255,.85);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+}
+.sidebar nav a:hover { background: rgba(255,255,255,.1); }
+.sidebar nav a.active {
+  background: var(--primary);
+  border-left-color: #fff;
+  color: #fff;
+}
+
+.main { flex: 1; padding: 24px 28px; min-width: 0; }
+
+/* 顶部标题 */
+.page-header { margin-bottom: 20px; }
+.page-header h1 { font-size: 22px; font-weight: 700; }
+.page-header p { color: var(--text-muted); margin-top: 4px; }
+
+/* 卡片 */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  margin-bottom: 18px;
+}
+.card h3 { font-size: 15px; margin-bottom: 12px; }
+
+/* 工具栏按钮 */
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.btn {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.btn:hover { border-color: var(--primary); color: var(--primary); }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); color: #fff; }
+
+/* 表格 */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: #f7fafc; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+tbody tr:hover { background: #f7fafc; }
+
+/* 状态标签 */
+.tag { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 12px; }
+.tag-ok { background: #f0fff4; color: var(--ok); }
+.tag-warn { background: #fffaf0; color: var(--warn); }
+.tag-danger { background: #fff5f5; color: var(--danger); }
+
+/* 概览统计 */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+.stat { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.stat .num { font-size: 26px; font-weight: 700; color: var(--primary); }
+.stat .lbl { color: var(--text-muted); margin-top: 4px; }
+
+/* Tab */
+.tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); margin-bottom: 16px; }
+.tabs .tab {
+  padding: 9px 18px; cursor: pointer; color: var(--text-muted);
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+}
+.tabs .tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+/* 搜索/输入 */
+.search-box { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+.search-box input, .search-box select {
+  padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+}
+.search-box input { min-width: 260px; }
+
+/* 代码/pre */
+pre.code {
+  background: #1a202c; color: #a0ecc0;
+  padding: 14px; border-radius: 8px; overflow: auto; font-size: 13px; line-height: 1.6;
+}
+code { font-family: Consolas, monospace; }
+
+.empty { color: var(--text-muted); text-align: center; padding: 30px; }
+
+/* 模态框 */
+.modal-mask {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: none; align-items: center; justify-content: center; z-index: 100;
+}
+.modal-mask.show { display: flex; }
+.modal {
+  background: #fff; border-radius: 10px; width: 720px; max-width: 94vw;
+  max-height: 90vh; overflow: auto; padding: 22px 26px;
+}
+.modal h3 { font-size: 17px; margin-bottom: 16px; }
+.modal .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
+.modal .field label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+.modal .field label .req { color: var(--danger); }
+.modal .field input, .modal .field select {
+  width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+}
+.modal .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }

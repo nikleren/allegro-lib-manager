@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Allegro 库管理 · CIS 数据库</title>
+  <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">Allegro 库管理</div>
+    <nav>
+      <a id="nav-index" href="index.html">🏠 首页</a>
+      <a id="nav-db" href="db.html">🗄️ CIS 数据库</a>
+      <a id="nav-files" href="files.html">📁 文件管理</a>
+      <a id="nav-models" href="models.html">🧊 3D 模型</a>
+      <a id="nav-env" href="env.html">⚙️ env 配置</a>
+      <a id="nav-git" href="git.html">🔄 Git 同步</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>CIS 数据库管理</h1>
+      <p>管理 Access 元件库（PART_TABLE）· 数据源：Allegro_CIS_DB.accdb</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="openPartModal()">＋ 新增器件</button>
+      <button class="btn" onclick="toast('导入 CSV')">导入 CSV</button>
+      <button class="btn" onclick="toast('导出模板')">导出 CSV 模板</button>
+      <button class="btn" onclick="toast('生成 DBC')">生成 DBC</button>
+      <button class="btn" onclick="toast('导出 BOM')">导出 BOM</button>
+    </div>
+
+    <div class="search-box">
+      <input type="text" placeholder="搜索器件编号 / 型号 / 描述...">
+      <select><option>全部类型</option><option>电阻</option><option>电容</option><option>电感</option><option>连接器</option><option>IC</option></select>
+      <button class="btn btn-primary">查询</button>
+    </div>
+
+    <div class="card">
+      <h3>器件列表（示例数据 · 原型）</h3>
+      <table id="partTable">
+        <thead>
+          <tr><th>器件编号</th><th>数值</th><th>容差</th><th>类型</th><th>厂商</th><th>厂商料号</th><th>描述</th><th>符号</th><th>封装</th><th>3D</th><th>数据手册</th><th>环保</th><th>温度范围</th><th>供应商</th><th>单价</th><th>状态</th><th>备注</th><th>操作</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- 新增/编辑器件 模态框（原型） -->
+<div class="modal-mask" id="partModal">
+  <div class="modal">
+    <h3 id="partModalTitle">新增器件</h3>
+    <div class="form-grid">
+      <div class="field"><label>器件编号 <span class="req">*</span></label><input id="f_pn" placeholder="如 R-0603-10K"></div>
+      <div class="field"><label>数值</label><input id="f_value" placeholder="如 10K"></div>
+      <div class="field"><label>容差</label><input id="f_tolerance" placeholder="如 ±1%"></div>
+      <div class="field"><label>类型</label><select id="f_type"><option>电阻</option><option>电容</option><option>电感</option><option>连接器</option><option>IC</option><option>二极管</option><option>其他</option></select></div>
+      <div class="field"><label>厂商</label><input id="f_mfr"></div>
+      <div class="field"><label>厂商料号</label><input id="f_mpn"></div>
+      <div class="field"><label>描述</label><input id="f_desc"></div>
+      <div class="field"><label>符号 <span class="req">*</span></label><input id="f_sym"></div>
+      <div class="field"><label>封装 <span class="req">*</span></label><input id="f_fp"></div>
+      <div class="field"><label>3D 模型</label><input id="f_step"></div>
+      <div class="field"><label>数据手册</label><input id="f_ds"></div>
+      <div class="field"><label>环保</label><input id="f_rohs" value="ROHS"></div>
+      <div class="field"><label>温度范围</label><input id="f_temp"></div>
+      <div class="field"><label>供应商</label><input id="f_supplier"></div>
+      <div class="field"><label>单价</label><input id="f_cost" placeholder="0.00"></div>
+      <div class="field"><label>状态</label><select id="f_life"><option>Active</option><option>Obsolete</option><option>NRU</option></select></div>
+      <div class="field"><label>备注</label><input id="f_remark"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closePartModal()">取消</button>
+      <button class="btn btn-primary" onclick="savePart()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script src="../static/js/app.js"></script>
+</body>
+</html>

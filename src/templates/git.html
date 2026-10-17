@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Allegro 库管理 · Git 同步</title>
+  <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">Allegro 库管理</div>
+    <nav>
+      <a id="nav-index" href="index.html">🏠 首页</a>
+      <a id="nav-db" href="db.html">🗄️ CIS 数据库</a>
+      <a id="nav-files" href="files.html">📁 文件管理</a>
+      <a id="nav-models" href="models.html">🧊 3D 模型</a>
+      <a id="nav-env" href="env.html">⚙️ env 配置</a>
+      <a id="nav-git" href="git.html">🔄 Git 同步</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>Git 远程仓库同步</h1>
+      <p>将库打包上传到远程仓库 / 从远程拉取 · 支持 GitHub 与私有 GitLab</p>
+    </div>
+
+    <div class="card">
+      <h3>远程仓库配置（示例 · 原型）</h3>
+      <table id="gitConfigTable">
+        <thead><tr><th>配置项</th><th>值</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="toolbar" style="margin:14px 0 0;">
+        <button class="btn btn-primary" onclick="toast('保存远程仓库配置')">保存配置</button>
+        <button class="btn" onclick="toast('测试连接')">测试连接</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>同步操作</h3>
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="toast('打包并上传到 GitHub')">⬆ 打包上传（push）</button>
+        <button class="btn" onclick="toast('从远程拉取到本地')">⬇ 远程拉取（pull）</button>
+        <button class="btn" onclick="toast('生成打包清单')">生成打包清单</button>
+      </div>
+      <table id="gitStatusTable">
+        <thead><tr><th>操作</th><th>状态</th><th>时间</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<script src="../static/js/app.js"></script>
+</body>
+</html>

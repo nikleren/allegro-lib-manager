@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Allegro 库管理 · 文件管理</title>
+  <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">Allegro 库管理</div>
+    <nav>
+      <a id="nav-index" href="index.html">🏠 首页</a>
+      <a id="nav-db" href="db.html">🗄️ CIS 数据库</a>
+      <a id="nav-files" href="files.html">📁 文件管理</a>
+      <a id="nav-models" href="models.html">🧊 3D 模型</a>
+      <a id="nav-env" href="env.html">⚙️ env 配置</a>
+      <a id="nav-git" href="git.html">🔄 Git 同步</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>文件管理（封装 / 焊盘 / 符号）</h1>
+      <p>库根：D:\my_workspace\project\allegroLibmm</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="toast('开始扫描')">开始扫描</button>
+      <button class="btn" onclick="toast('重新校验')">重新校验</button>
+      <button class="btn" onclick="toast('生成报表')">生成报表</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-dir="footprint">封装 footprint</div>
+      <div class="tab" data-dir="pad">焊盘 pad</div>
+      <div class="tab" data-dir="flash">花焊盘 flash</div>
+      <div class="tab" data-dir="schematic">符号 schematic</div>
+    </div>
+
+    <div class="card">
+      <h3>校验结果（示例数据 · 原型）</h3>
+      <table id="fileTable">
+        <thead><tr><th>文件名</th><th>目录</th><th>大小</th><th>命名规范</th><th>查重</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<script src="../static/js/app.js"></script>
+</body>
+</html>
