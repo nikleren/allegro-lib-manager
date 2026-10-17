@@ -15,3 +15,8 @@ _tmp*/
 # 文件选择对话框运行时产物
 src/_browse_result.txt
 src/browse_launch.vbs
+
+# 本地元件库内容（封装/焊盘/符号/3D，第三方或私有，不随仓库分发；空目录由 install.bat 创建）
+/3d/
+/schematic/
+/symbol/
