@@ -12,6 +12,7 @@ import subprocess
 from flask import Flask, render_template, jsonify, request, Response
 
 from db_manage import db
+from db_manage import capture_ini
 from config import get_config, set_lib_root, set_db_file
 
 # 页面映射（key 兼容带 / 不带 .html 后缀）
@@ -70,13 +71,77 @@ def api_config_post():
 # ===== 数据库文件"打开选择"对话框（Windows 原生） =====
 @app.route("/api/config/browse-db")
 def api_config_browse_db():
-    path = _browse_access_file()
+    path = _browse_file(
+        filter_str="Access Database (*.accdb;*.mdb)|*.accdb;*.mdb|All Files (*.*)|*.*",
+        title="Select Access Database File")
     if path:
         return jsonify({"ok": True, "path": path})
     return jsonify({"ok": False, "message": "未选择文件"})
 
 
-def _browse_access_file():
+@app.route("/api/config/browse-capture-ini")
+def api_config_browse_capture_ini():
+    """G6：弹出文件选择框选择 Capture.ini 文件本身。"""
+    path = _browse_file(
+        filter_str="Capture.ini (*.ini)|*.ini|All Files (*.*)|*.*",
+        title="Select Capture.ini File")
+    if path:
+        return jsonify({"ok": True, "path": path})
+    return jsonify({"ok": False, "message": "未选择文件"})
+
+
+@app.route("/api/config/capture-ini")
+def api_config_capture_ini():
+    """G6：探测并解析 Capture.ini，返回封装路径 / 符号库路径 / datasheet 路径（只读）。"""
+    specified = request.args.get("path", "").strip()
+    ini, hint = capture_ini.find_capture_ini(specified)
+    if not ini:
+        return jsonify({"ok": False, "message": hint})
+    result = capture_ini.parse_capture_ini(ini)
+    return jsonify({"ok": True, "hint": hint, "capture": result})
+
+
+@app.route("/api/config/capture-ini/sync", methods=["POST"])
+def api_config_capture_ini_sync():
+    """G6：读取 Capture.ini 并同步：封装路径联动库根（G4），datasheet 路径批量回填 PART_TABLE。"""
+    data = request.get_json(silent=True) or {}
+    specified = (data.get("path") or "").strip()
+    apply_libroot = bool(data.get("apply_libroot", True))
+    apply_datasheet = bool(data.get("apply_datasheet", True))
+
+    ini, hint = capture_ini.find_capture_ini(specified)
+    if not ini:
+        return jsonify({"ok": False, "message": hint})
+
+    result = capture_ini.parse_capture_ini(ini)
+    notes = []
+    # 1) 封装路径联动库根（G4）
+    if apply_libroot and result["footprint_dirs"]:
+        target = result["footprint_dirs"][0]
+        ok, msg = set_lib_root(target)
+        if ok:
+            notes.append("库根已同步至封装路径：" + target)
+        else:
+            notes.append("库根同步失败：" + msg)
+    # 2) datasheet 路径批量回填
+    if apply_datasheet:
+        filled = 0
+        try:
+            rows = db.list_parts()
+            for r in rows:
+                if not (r.get("Datasheet") or "").strip():
+                    url = capture_ini.build_datasheet_url(result["datasheet_dir"], r)
+                    if url:
+                        db.update_part(r["Part_Number"], {"Datasheet": url})
+                        filled += 1
+            notes.append(f"Datasheet 已回填 {filled} 条（空值记录）")
+        except Exception as e:
+            notes.append("Datasheet 回填失败：" + str(e))
+
+    return jsonify({"ok": True, "hint": hint, "capture": result, "notes": notes})
+
+
+def _browse_file(filter_str="All Files (*.*)|*.*", title="Select File"):
     """在用户交互桌面弹出文件选择对话框，返回路径或 None。
 
     背景：后端由内置/沙箱 python 启动，其窗口站与用户桌面隔离，
@@ -94,7 +159,8 @@ def _browse_access_file():
         # 生成纯 ASCII 的 VBS（反斜杠在 VBS 字符串中无需转义，内嵌引号用 "" 转义）
         with open(vbs, "w", encoding="ascii") as f:
             f.write('Set sh = CreateObject("WScript.Shell")\n')
-            f.write('sh.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ""%s"" -Out ""%s""", 0, False\n' % (ps1, out))
+            f.write('sh.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ""%s"" -Out ""%s"" -Filter ""%s"" -Title ""%s""", 0, False\n'
+                    % (ps1, out, filter_str, title))
         # 经 explorer 在用户交互桌面启动（不等待）
         subprocess.Popen(["explorer.exe", vbs])
         # 轮询结果文件（最多 10 分钟）

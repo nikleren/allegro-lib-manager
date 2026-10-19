@@ -159,5 +159,9 @@ code { font-family: Consolas, monospace; }
 .cfg-status { font-size: 13px; }
 .cfg-status.ok { color: var(--ok); }
 .cfg-status.err { color: var(--danger); }
+.capture-result {
+  width: 100%; padding: 10px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; font-size: 12px; font-family: Consolas, monospace; white-space: pre-wrap;
+}
 .hint { color: var(--text-muted); font-size: 12px; margin: 6px 0 12px; }
 

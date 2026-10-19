@@ -64,6 +64,16 @@
         <button class="btn" onclick="saveDbFile()">💾 保存数据库路径</button>
         <span id="dbFileStatus" class="cfg-status"></span>
       </div>
+      <div class="cfg-row">
+        <label for="captureIniInput">Capture.ini：</label>
+        <input id="captureIniInput" type="text" class="cfg-input" placeholder="留空 = 自动探测（SPB_Data\cdssetup\OrCAD_Capture）">
+        <button class="btn" onclick="browseCaptureIni()">📂 浏览…</button>
+        <button class="btn" onclick="syncCaptureIni()">🔄 更新 Capture.ini</button>
+        <span id="captureIniStatus" class="cfg-status"></span>
+      </div>
+      <div class="cfg-row" id="captureIniResult" style="display:none;">
+        <pre class="capture-result"></pre>
+      </div>
       <p class="hint">库根与程序部署目录分离，可指向程序目录之外的任意路径；各子目录均基于库根解析。数据库文件路径可单独配置（G5）。</p>
       <table id="libDirTable">
         <thead><tr><th>用途</th><th>本地路径</th><th>状态</th></tr></thead>

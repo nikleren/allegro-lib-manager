@@ -445,3 +445,67 @@ function browseDbFile() {
     .catch(() => { st.textContent = '❌ 打开文件对话框失败'; st.className = 'cfg-status err'; });
 }
 
+// G6：打开系统文件选择对话框，选择 Capture.ini 文件本身并回填
+function browseCaptureIni() {
+  const st = document.getElementById('captureIniStatus');
+  st.textContent = '⏳ 请在弹出的窗口中选择 Capture.ini 文件…';
+  st.className = 'cfg-status';
+  fetch('/api/config/browse-capture-ini')
+    .then(r => r.json())
+    .then(res => {
+      if (res.ok && res.path) {
+        document.getElementById('captureIniInput').value = res.path;
+        st.textContent = '✅ 已选择 Capture.ini，可点击"探测"或"同步"';
+        st.className = 'cfg-status ok';
+      } else {
+        st.textContent = (res.message || '未选择文件');
+        st.className = 'cfg-status';
+      }
+    })
+    .catch(() => { st.textContent = '❌ 打开文件对话框失败'; st.className = 'cfg-status err'; });
+}
+
+/* ===== G6：Capture.ini 路径同步（手动触发，可指定路径） ===== */
+function captureIniPath() {
+  return document.getElementById('captureIniInput')
+    ? document.getElementById('captureIniInput').value.trim() : '';
+}
+
+function showCaptureResult(html, statusCls, statusMsg) {
+  const box = document.getElementById('captureIniResult');
+  const pre = box.querySelector('pre');
+  pre.textContent = html;
+  box.style.display = 'block';
+  const st = document.getElementById('captureIniStatus');
+  st.textContent = statusMsg;
+  st.className = 'cfg-status ' + (statusCls || '');
+}
+
+// 同步：读取 Capture.ini，封装路径联动库根，datasheet 批量回填（需确认后执行）
+function syncCaptureIni() {
+  const p = captureIniPath();
+  if (!confirm('将读取 Capture.ini 并更新软件配置：\n1) 封装路径 -> 库根（G4）\n2) datasheet 路径 -> 批量回填器件 Datasheet（仅空值）\n\n确认继续？')) return;
+  const st = document.getElementById('captureIniStatus');
+  st.textContent = '⏳ 正在同步…'; st.className = 'cfg-status';
+  fetch('/api/config/capture-ini/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: p, apply_libroot: true, apply_datasheet: true })
+  })
+    .then(r => r.json())
+    .then(res => {
+      if (!res.ok) { showCaptureResult('', 'err', '❌ ' + res.message); return; }
+      const c = res.capture;
+      let txt = '路径：' + c.path + '\n';
+      txt += '封装路径：' + (c.footprint_dirs.join(' ; ') || '未找到') + '\n';
+      txt += 'datasheet 路径：' + (c.datasheet_dir || '未找到') + '\n';
+      txt += '\n执行结果：\n' + res.notes.map(n => '• ' + n).join('\n');
+      showCaptureResult(txt, 'ok', '✅ 同步完成');
+      if (res.notes.some(n => n.indexOf('库根') >= 0)) {
+        loadConfig();  // 库根可能变化，刷新首页配置
+        renderLibDirs({});
+      }
+    })
+    .catch(() => showCaptureResult('', 'err', '❌ 同步失败（后端不可达）'));
+}
+
